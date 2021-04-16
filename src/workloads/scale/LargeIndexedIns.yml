@@ -1,0 +1,66 @@
+SchemaVersion: 2018-07-01
+Owner: "@mongodb/product-perf"
+Description: |
+  This workload is reproduces a workload that uses many $in commands
+
+Clients:
+  Default:
+    QueryOptions:
+      maxPoolSize: 500
+
+Actors:
+- Name: Loader
+  Type: Loader
+  Threads: 1
+  Phases:
+  - Repeat: 1
+    Database: largeins
+    CollectionCount: 1
+    Threads: 1
+    DocumentCount: &docs 1000
+    BatchSize: 1000
+    Indexes:
+    - keys: {_id: 1, stringLong: 1}
+    Document:
+      _id: {^Inc: {start: 0}}
+      a: 1
+      f: {^RandomString: {length: 10 }}
+  - {Nop: true}
+
+- Name: FindLargeIn
+  Type: CrudActor
+  Threads: 120
+  Database: largeins
+  Phases:
+  - {Nop: true}
+  - Name: FindLargeIn
+    Duration: 2 minutes
+    GlobalRate: 120 per 30 seconds
+    Collection: Collection0
+    Operations:
+    - OperationName: find
+      OperationCommand:
+        Filter: {_id: {$in: {^Array: {of: {^RandomInt: {min: 0, max: 10000000}}, number: 100000}}}}
+
+- Name: Update
+  Type: CrudActor
+  Database: largeins
+  ClientName: Update
+  Threads: 10
+  Phases:
+  - {Nop: true}
+  - Blocking: None
+    RecordFailure: true
+    Collection: Collection0
+    Operations:
+    - OperationName: updateOne
+      OperationCommand:
+        Filter: &filter {id: {^RandomInt: {min: 0, max: 1000}}}
+        Update:
+          $inc: {a: 1}
+
+# AutoRun:
+#   Requires:
+#     bootstrap:
+#       mongodb_setup:
+#         - single
