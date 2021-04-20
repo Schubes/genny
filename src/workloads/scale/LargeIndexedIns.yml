@@ -6,7 +6,7 @@ Description: |
 Clients:
   Default:
     QueryOptions:
-      maxPoolSize: 500
+      maxPoolSize: 20000
 
 Actors:
 - Name: Loader
@@ -29,13 +29,13 @@ Actors:
 
 - Name: FindLargeIn
   Type: CrudActor
-  Threads: 120
+  Threads: 8000
   Database: largeins
   Phases:
   - {Nop: true}
   - Name: FindLargeIn
-    Duration: 2 minutes
-    GlobalRate: 120 per 30 seconds
+    Duration: 3 minutes
+    GlobalRate: 2000 per 30 seconds
     Collection: Collection0
     Operations:
     - OperationName: find
@@ -49,8 +49,9 @@ Actors:
   Threads: 10
   Phases:
   - {Nop: true}
-  - Blocking: None
+  - Duration: 3 minutes
     RecordFailure: true
+    GlobalRate: 1 per 250 milliseconds
     Collection: Collection0
     Operations:
     - OperationName: updateOne
